@@ -159,12 +159,12 @@ one_step_wb_raw <- function(t, delta_vals, y,
                             cost_rate = 0.1, Kmax = 500) {
   cost_rate <- as.numeric(cost_rate)[1]
   wF <- as.numeric(wF)[1]; wP <- as.numeric(wP)[1]; gamma <- as.numeric(gamma)[1]
-
+  
   a_cl <- gamma * a_clean_prev + y[t]; b_cl <- gamma * b_clean_prev + 1
   r_cl <- gamma * a_cl; p_cl <- (gamma * b_cl) / (gamma * b_cl + 1)
-
+  
   nD <- length(delta_vals); klF <- numeric(nD); klP <- numeric(nD)
-
+  
   for (j in seq_along(delta_vals)) {
     delta   <- delta_vals[j]
     y_tilde <- max(0, y[t] + delta)
@@ -225,7 +225,7 @@ regime_df <- regime_df[!is.na(regime_df$xmin) & !is.na(regime_df$xmax) &
 arch_colors <- setNames(c(archetypes$SP$color, archetypes$FM$color), c("SP", "FM"))
 
 p_s1_0 <- ggplot(sens_cost_df, aes(x = cost_rate, y = delta_opt,
-                                    color = archetype, linetype = profitable)) +
+                                   color = archetype, linetype = profitable)) +
   {if (nrow(regime_df) > 0)
     geom_rect(data = regime_df,
               aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = label),
@@ -351,7 +351,7 @@ make_s12_rows <- function(ar) {
   a_att  <- gamma_nom * a_prev + y_til; b_att <- gamma_nom * b_prev + 1
   r_att  <- gamma_nom * a_att;          p_att <- (gamma_nom * b_att) / (gamma_nom * b_att + 1)
   att_lbl <- paste0("Attacked (delta* = ", ds, ")")
-
+  
   pred_rows <- data.frame(
     k = rep(k_grid, 2),
     prob = c(dnbinom(k_grid, size = r_cl_base, prob = 1 - p_cl_base),
@@ -359,7 +359,7 @@ make_s12_rows <- function(ar) {
     scenario = rep(c("Clean", att_lbl), each = length(k_grid)),
     archetype = ar$label_short, dist_type = "Predictive PMF",
     clr_clean = "#888888", clr_att = ar$color, stringsAsFactors = FALSE)
-
+  
   filt_rows <- data.frame(
     lam = rep(lam_grid, 2),
     dens = c(dgamma(lam_grid, shape = a_cl_base, rate = b_cl_base),
@@ -367,7 +367,7 @@ make_s12_rows <- function(ar) {
     scenario = rep(c("Clean", att_lbl), each = length(lam_grid)),
     archetype = ar$label_short, dist_type = "Filtering Density",
     clr_clean = "#888888", clr_att = ar$color, stringsAsFactors = FALSE)
-
+  
   list(pred = pred_rows, filt = filt_rows, delta_star = ds, att_lbl = att_lbl,
        a_att = a_att, b_att = b_att, r_att = r_att, p_att = p_att,
        color = ar$color, archetype = ar$label_short)
@@ -475,13 +475,13 @@ one_step_gb <- function(t, delta_vals, y,
   util_mat    <- matrix(NA, nD, n_samples)
   klF_mat     <- matrix(NA, nD, n_samples)
   klP_mat     <- matrix(NA, nD, n_samples)
-
+  
   for (s in 1:n_samples) {
     gam_s  <- sample(gamma_vec, 1, prob = gamma_probs)
     a_cl_s <- gam_s * a_clean_prev + y[t]; b_cl_s <- gam_s * b_clean_prev + 1
     r_cl_s <- gam_s * a_cl_s;              p_cl_s <- (gam_s * b_cl_s) / (gam_s * b_cl_s + 1)
     klF_raw <- numeric(nD); klP_raw <- numeric(nD)
-
+    
     for (j in seq_along(delta_vals)) {
       delta   <- delta_vals[j]
       alpha_s <- alpha_fun(delta, d_fixed); beta_s <- beta_fun(delta, d_fixed)
@@ -495,7 +495,7 @@ one_step_gb <- function(t, delta_vals, y,
     klF_mat[, s]  <- klF_raw; klP_mat[, s] <- klP_raw
     util_mat[, s] <- as.numeric(wF * klF_raw + wP * klP_raw - cost_rate * delta_vals^2)
   }
-
+  
   data.frame(delta = delta_vals,
              util_mean = rowMeans(util_mat),
              util_lo   = apply(util_mat, 1, quantile, 0.025),
@@ -520,7 +520,7 @@ make_s14_panel <- function(ar) {
   ds_wb <- wb$delta[which.max(wb$utility)]
   y_top <- max(gb$util_hi, wb$utility, na.rm = TRUE)
   y_range <- y_top - min(gb$util_lo, wb$utility, na.rm = TRUE)
-
+  
   ggplot(gb, aes(x = delta)) +
     geom_ribbon(aes(ymin = util_lo, ymax = util_hi), fill = ar$color, alpha = 0.20) +
     geom_line(aes(y = util_mean, color = "Gray-box (mean)"), linewidth = 1.1) +
@@ -600,20 +600,20 @@ ggsave("S1_5_attack_success.pdf", p_s1_5, width = 10, height = 5)
 # =============================================================================
 cat("Running S1.6 ...\n")
 
-a1_vals <- c(0.1, 0.5, 1.0)
-a2_vals <- c(-0.4, -0.2, 0.0)
+s1_vals <- c(0.1, 0.5, 1.0)
+s2_vals <- c(-0.4, -0.2, 0.0)
 c1_vals <- c(1, 10, 100)
 
-df_a1 <- bind_rows(lapply(a1_vals, function(a1) {
+df_s1 <- bind_rows(lapply(s1_vals, function(s1) {
   data.frame(delta = delta_vals,
-             mu = sapply(delta_vals, function(del) 1/(1+exp(-(a011 + a1*del + a211*2)))),
-             param_val = as.character(a1), param = "a[1] (sensitivity)")
+             mu = sapply(delta_vals, function(del) 1/(1+exp(-(a011 + s1*del + a211*2)))),
+             param_val = as.character(s1), param = "s[1] (sensitivity)")
 }))
 
-df_a2 <- bind_rows(lapply(a2_vals, function(a2) {
+df_s2 <- bind_rows(lapply(s2_vals, function(s2) {
   data.frame(delta = delta_vals,
-             mu = sapply(delta_vals, function(del) 1/(1+exp(-(a011 + a111*del + a2*2)))),
-             param_val = as.character(a2), param = "a[2] (deterrence)")
+             mu = sapply(delta_vals, function(del) 1/(1+exp(-(a011 + a111*del + s2*2)))),
+             param_val = as.character(s2), param = "s[2] (deterrence)")
 }))
 
 df_c1 <- bind_rows(lapply(c1_vals, function(cc) {
@@ -624,25 +624,25 @@ df_c1 <- bind_rows(lapply(c1_vals, function(cc) {
              param_val = as.character(cc), param = "c[theta] (concentration)")
 }))
 
-p_a1 <- ggplot(df_a1, aes(x = delta, y = mu, color = param_val)) +
-  geom_line(linewidth = 1.1) + scale_color_brewer(palette = "Set1", name = expression(a[1])) +
-  labs(title = expression("Vary "*a[1]*" (sensitivity to "*delta*")"),
+p_s1 <- ggplot(df_s1, aes(x = delta, y = mu, color = param_val)) +
+  geom_line(linewidth = 1.1) + scale_color_brewer(palette = "Set1", name = expression(s[1])) +
+  labs(title = expression("Vary "*s[1]*" (sensitivity to "*delta*")"),
        x = expression(delta), y = expression(E[theta])) + ylim(0, 1) + theme_ara
 
-p_a2 <- ggplot(df_a2, aes(x = delta, y = mu, color = param_val)) +
-  geom_line(linewidth = 1.1) + scale_color_brewer(palette = "Set2", name = expression(a[2])) +
-  labs(title = expression("Vary "*a[2]*" (deterrence)"),
+p_s2 <- ggplot(df_s2, aes(x = delta, y = mu, color = param_val)) +
+  geom_line(linewidth = 1.1) + scale_color_brewer(palette = "Set2", name = expression(s[2])) +
+  labs(title = expression("Vary "*s[2]*" (deterrence)"),
        x = expression(delta), y = expression(E[theta])) + ylim(0, 1) + theme_ara
 
 p_c1 <- ggplot(df_c1, aes(x = delta, y = mu, color = param_val,
-                           ymin = pmax(0, mu - sd), ymax = pmin(1, mu + sd), fill = param_val)) +
+                          ymin = pmax(0, mu - sd), ymax = pmin(1, mu + sd), fill = param_val)) +
   geom_ribbon(alpha = 0.2, color = NA) + geom_line(linewidth = 1.1) +
   scale_color_brewer(palette = "Set3", name = expression(c[theta])) +
   scale_fill_brewer(palette  = "Set3", name = expression(c[theta])) +
   labs(title = expression("Vary "*c[theta]*" (concentration)"),
        x = expression(delta), y = expression(E[theta])) + ylim(0, 1) + theme_ara
 
-p_s1_6 <- p_a1 + p_a2 + p_c1 +
+p_s1_6 <- p_s1 + p_s2 + p_c1 +
   plot_annotation(title = "Sensitivity of Attack Success Probability to Parameters")
 
 print(p_s1_6)
@@ -667,7 +667,7 @@ run_sequential_attack <- function(
     wF = 0.5, wP = 0.5,
     cost_rate = 0.1, Kmax = 500,
     n_samples = 500) {
-
+  
   gamma_probs <- gamma_probs / sum(gamma_probs)
   delta_opt_mat <- matrix(NA, n_samples, H)
   klF_mat       <- matrix(NA, n_samples, H)
@@ -676,12 +676,12 @@ run_sequential_attack <- function(
   a_att_mat     <- matrix(NA, n_samples, H)
   b_att_mat     <- matrix(NA, n_samples, H)
   a_cl_mat      <- matrix(NA, n_samples, H)
-
+  
   for (s in 1:n_samples) {
     gam_s      <- sample(gamma_vec, 1, prob = gamma_probs)
     a_att_prev <- a_clean_all[t_start - 1]; b_att_prev <- b_clean_all[t_start - 1]
     a_cl_prev  <- a_clean_all[t_start - 1]; b_cl_prev  <- b_clean_all[t_start - 1]
-
+    
     for (k in 1:H) {
       tau <- t_start + k - 1
       if (tau > length(y)) break
@@ -689,9 +689,9 @@ run_sequential_attack <- function(
       a_cl_k <- gam_s * a_cl_prev + y[tau]; b_cl_k <- gam_s * b_cl_prev + 1
       r_cl_k <- gam_s * a_cl_k;             p_cl_k <- (gam_s * b_cl_k) / (gam_s * b_cl_k + 1)
       a_cl_mat[s, k] <- a_cl_k
-
+      
       best_util <- -Inf; best_delta <- delta_vals[1]; best_klF <- 0; best_klP <- 0
-
+      
       for (del in delta_vals) {
         mu_d    <- mu_fun(del, d_k)
         y_til_s <- max(0, y[tau] + del)
@@ -699,36 +699,36 @@ run_sequential_attack <- function(
         r_att_s <- gam_s * a_att_s;              p_att_s <- (gam_s * b_att_s) / (gam_s * b_att_s + 1)
         a_att_f <- gam_s * a_att_prev + y[tau];  b_att_f <- gam_s * b_att_prev + 1
         r_att_f <- gam_s * a_att_f;              p_att_f <- (gam_s * b_att_f) / (gam_s * b_att_f + 1)
-
+        
         klF_s <- kl_gamma(a_att_s, b_att_s, a_cl_k, b_cl_k)
         klP_s <- kl_negbin(r_att_s, p_att_s, r_cl_k, p_cl_k, Kmax)
         klF_f <- kl_gamma(a_att_f, b_att_f, a_cl_k, b_cl_k)
         klP_f <- kl_negbin(r_att_f, p_att_f, r_cl_k, p_cl_k, Kmax)
-
+        
         klF_k  <- mu_d * klF_s + (1 - mu_d) * klF_f
         klP_k  <- mu_d * klP_s + (1 - mu_d) * klP_f
         util_k <- as.numeric(wF * klF_k + wP * klP_k - cost_rate * del^2)
-
+        
         if (util_k > best_util) {
           best_util <- util_k; best_delta <- del; best_klF <- klF_k; best_klP <- klP_k
         }
       }
-
+      
       mu_best    <- mu_fun(best_delta, d_k)
       theta_best <- rbeta(1, alpha_fun(best_delta, d_k), beta_fun(best_delta, d_k))
       succ_best  <- rbinom(1, 1, theta_best)
       y_til_best <- if (succ_best == 1) max(0, y[tau] + best_delta) else y[tau]
       a_att_best <- gam_s * a_att_prev + y_til_best; b_att_best <- gam_s * b_att_prev + 1
-
+      
       delta_opt_mat[s, k] <- best_delta; klF_mat[s, k] <- best_klF
       klP_mat[s, k]       <- best_klP;   util_mat[s, k] <- best_util
       a_att_mat[s, k]     <- a_att_best; b_att_mat[s, k] <- b_att_best
-
+      
       a_att_prev <- a_att_best; b_att_prev <- b_att_best
       a_cl_prev  <- a_cl_k;    b_cl_prev  <- b_cl_k
     }
   }
-
+  
   list(delta_opt = delta_opt_mat, klF = klF_mat, klP = klP_mat,
        util = util_mat, a_att = a_att_mat, b_att = b_att_mat, a_cl = a_cl_mat)
 }
