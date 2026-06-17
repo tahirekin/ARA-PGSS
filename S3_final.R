@@ -54,7 +54,7 @@ t_eval_def <- t_eval
 # =============================================================================
 
 oracle_kl_fun <- function(r_att, p_att, r_cl, p_cl, Kmax = Kmax_def) {
-  kl_negbin(r_cl, p_cl, r_att, p_att, Kmax)
+  kl_negbin(r_att, p_att, r_cl, p_cl, Kmax)
 }
 
 defender_one_step <- function(
@@ -87,8 +87,8 @@ defender_one_step <- function(
       y_til_j <- max(0L, y[t] + del_j)
       a_j     <- gam_s * a_prev + y_til_j; b_j <- gam_s * b_prev + 1
       r_j     <- gam_s * a_j;              p_j <- (gam_s * b_j) / (gam_s * b_j + 1)
-      klF_raw[j] <- as.numeric(kl_gamma(a_cl_s, b_cl_s, a_j, b_j))
-      klP_raw[j] <- as.numeric(kl_negbin(r_cl_s, p_cl_s, r_j, p_j, Kmax))
+      klF_raw[j] <- as.numeric(kl_gamma(a_j, b_j, a_cl_s, b_cl_s))
+      klP_raw[j] <- as.numeric(kl_negbin(r_j, p_j, r_cl_s, p_cl_s, Kmax))
     }
 
     mu_vec    <- plogis(a0_logit + a1_logit * delta_vals + a2_logit * d_val)
